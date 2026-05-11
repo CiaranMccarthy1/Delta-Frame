@@ -1,18 +1,66 @@
 # GPU-Accelerated Delta-Encoded Video Codec
 
-A high-throughput C++ video compression engine utilizing temporal delta encoding and Run-Length Encoding (RLE) to achieve extreme compression ratios on low-entropy footage.
+A high-throughput C++ video compression engine using temporal delta encoding and Run-Length Encoding (RLE) to achieve high compression ratios on low-entropy footage (e.g., screen recordings, presentations, static-camera feeds).
 
-### What makes this interesting
+## What It Does
 
-The implementation leverages a custom SIMD-friendly bit-packing format that treats video as a stream of sparse pixel updates, minimizing I/O bottlenecks in static scenes. By offloading frame differencing and quantization to CUDA kernels, the codec achieves massive parallelization during the encoding bottleneck. This architecture prioritizes O(1) decode complexity per pixel change, making it a viable candidate for resource-constrained embedded playback where H.264 entropy decoding is computationally prohibitive.
+- **Temporal Delta Encoding**: Stores only the pixels that change between frames, rather than full frames.
+- **CUDA-Accelerated Pipeline**: Frame differencing and quantization run on the GPU to maximize throughput.
+- **RLE Serialization**: Changed regions are compressed via run-length encoding into a sparse update stream.
+- **O(1) Decode**: Each pixel change decodes in constant time - no entropy tables or complex prediction logic.
+- **Keyframe Safety**: Periodic keyframes prevent error propagation across long sequences.
 
-### Architecture overview
+## Why This Architecture
 
-The codec operates on a keyframe-plus-delta model to mitigate error propagation while maximizing temporal redundancy. Incoming frames are processed through a CUDA-accelerated pipeline that performs spatial downscaling and bit-quantization to filter sensor noise before calculating the per-channel Manhattan distance between sequential frames. Changes exceeding a configurable bit-threshold are serialized via an RLE-compressed stream, while static regions are represented as zero-length skip-instructions. This design intentionally trades off inter-frame prediction complexity for raw throughput and deterministic decoding logic. [VERIFY: The implementation utilizes a custom binary serialization format for the RLE-encoded stream.]
+| Approach | Trade-off |
+|----------|-----------|
+| Delta-only encoding | High compression for static scenes, but drift risk without keyframes |
+| CUDA for differencing | Massive parallelism on the encoder, but decode stays CPU-light |
+| RLE instead of entropy coding | Slightly lower compression ratio, but deterministic decode time per pixel |
+| Skip-instructions for static regions | Near-zero cost for unchanged areas |
 
-### Usage
+This targets embedded or resource-constrained playback where H.264 entropy decoding is too expensive, not bitrate-optimized streaming.
 
-The following example demonstrates a high-efficiency archival configuration using CUDA-accelerated quantization and aggressive temporal filtering:
+## How It Works
+
+```
+Input Frame
+    │
+    ▼
+Spatial Downscale ──► Bit-Quantization ──► Filter Noise
+    │
+    ▼
+Manhattan Distance vs Previous Frame
+    │
+    ├──► Below threshold ──► Skip Instruction (zero bytes)
+    │
+    └──► Above threshold ──► RLE-Encoded Delta Block
+```
+
+## Build & Usage
 
 ```powershell
-./video-compression.exe input.mp4 output.ige --cuda --width 640 --height 360 --quantize 3 --threshold 40 --interval 10
+# Encode with CUDA acceleration, aggressive quantization, and 10-frame keyframe interval
+./video-compression.exe input.mp4 output.ige `
+    --cuda `
+    --width 640 --height 360 `
+    --quantize 3 `
+    --threshold 40 `
+    --interval 10
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--cuda` | Enable GPU-accelerated differencing and quantization |
+| `--width`, `--height` | Target resolution (downscales if larger) |
+| `--quantize` | Bit-depth reduction for noise filtering (1–8) |
+| `--threshold` | Manhattan distance threshold for triggering a delta block |
+| `--interval` | Keyframe interval in frames |
+
+
+
+## License
+
+MIT
