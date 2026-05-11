@@ -10,8 +10,6 @@ The implementation leverages a custom SIMD-friendly bit-packing format that trea
 
 The codec operates on a keyframe-plus-delta model to mitigate error propagation while maximizing temporal redundancy. Incoming frames are processed through a CUDA-accelerated pipeline that performs spatial downscaling and bit-quantization to filter sensor noise before calculating the per-channel Manhattan distance between sequential frames. Changes exceeding a configurable bit-threshold are serialized via an RLE-compressed stream, while static regions are represented as zero-length skip-instructions. This design intentionally trades off inter-frame prediction complexity for raw throughput and deterministic decoding logic. [VERIFY: The implementation utilizes a custom binary serialization format for the RLE-encoded stream.]
 
-### Performance / Results
-
 ### Usage
 
 The following example demonstrates a high-efficiency archival configuration using CUDA-accelerated quantization and aggressive temporal filtering:
