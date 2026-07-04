@@ -37,15 +37,47 @@ Manhattan Distance vs Previous Frame
     └──► Above threshold ──► RLE-Encoded Delta Block
 ```
 
-## Build & Usage
+## Build
 
+### Linux
+Install dependencies:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev pkg-config cmake build-essential
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S ffmpeg pkgconf cmake base-devel
+```
+
+Compile the project:
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+
+### Windows
+Ensure FFmpeg is downloaded and extracted to `C:/ffmpeg` (or update the `CMakeLists.txt`), and you have CMake installed.
 ```powershell
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+## Usage
+
+```bash
 # Encode with CUDA acceleration, aggressive quantization, and 10-frame keyframe interval
-./video-compression.exe input.mp4 output.ige `
-    --cuda `
-    --width 640 --height 360 `
-    --quantize 3 `
-    --threshold 40 `
+./video-compression input.mp4 output.ige \
+    --cuda \
+    --width 640 --height 360 \
+    --quantize 3 \
+    --threshold 40 \
     --interval 10
 ```
 

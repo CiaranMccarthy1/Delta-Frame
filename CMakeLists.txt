@@ -1,4 +1,4 @@
-﻿# CMakeList.txt : Top-level CMake project file, do global configuration
+# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.10)
@@ -14,13 +14,16 @@ project ("video-compression")
 set(CMAKE_CXX_STANDARD 17)
 
 # Set FFmpeg path
-set(FFMPEG_DIR "C:/ffmpeg")
-
-# Include directories for FFmpeg headers
-include_directories(${FFMPEG_DIR}/include)
-
-# Link directories for FFmpeg libraries
-link_directories(${FFMPEG_DIR}/lib)
+if(WIN32)
+    set(FFMPEG_DIR "C:/ffmpeg")
+    include_directories(${FFMPEG_DIR}/include)
+    link_directories(${FFMPEG_DIR}/lib)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(FFMPEG REQUIRED libavcodec libavformat libavutil libswscale)
+    include_directories(${FFMPEG_INCLUDE_DIRS})
+    link_directories(${FFMPEG_LIBRARY_DIRS})
+endif()
 
 # Build the project
 add_executable(video-compression 
